@@ -1,0 +1,470 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>컬러로그</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: 한 손 조작 모바일 앱. 상단 로고, 가운데 티켓 카드 타임라인, 하단 탭바. 색은 감정이 정한다. */
+:root{
+  --bg:#EEF0F5; --card:#FFFFFF; --ink:#171A26; --mute:#646A7E; --line:#D7DBE6;
+  --accent:#171A26; --on-accent:#FFFFFF; --focus:#3B5BFF;
+  --f-display:'Black Han Sans','Noto Sans KR',sans-serif;
+  --f-body:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo',sans-serif;
+  --f-mono:'DM Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11131B; --card:#1B1E29; --ink:#EDEEF4; --mute:#9399AE; --line:#2C3040;
+  --accent:#EDEEF4; --on-accent:#11131B; --focus:#8FA2FF; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#11131B; --card:#1B1E29; --ink:#EDEEF4; --mute:#9399AE; --line:#2C3040;
+  --accent:#EDEEF4; --on-accent:#11131B; --focus:#8FA2FF; color-scheme:dark;}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.app{max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative}
+.top{padding:14px 16px 8px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.logo{font-family:var(--f-display);font-size:30px;line-height:1;letter-spacing:-.02em;display:flex}
+.top .sub{font-size:12.5px;color:var(--mute);text-align:right;font-family:var(--f-mono)}
+main{flex:1;overflow-y:auto;padding:4px 16px 24px;min-height:0;overscroll-behavior:contain}
+.tabs{display:grid;grid-template-columns:1fr 84px 1fr;align-items:center;background:var(--card);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px))}
+.tab{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--mute);padding:6px;border-radius:10px;min-height:48px}
+.tab[aria-current="page"]{color:var(--ink);font-weight:700}
+.tab svg{width:24px;height:24px}
+.rec{justify-self:center;width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;margin-top:-26px;box-shadow:0 6px 18px rgba(0,0,0,.22)}
+.rec svg{width:28px;height:28px}
+
+/* filters */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px 5px 6px;font-size:13px;min-height:36px}
+.chip.all{padding-left:12px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+
+.month{font-family:var(--f-mono);font-size:12.5px;color:var(--mute);letter-spacing:.08em;margin:14px 0 8px;display:flex;align-items:center;gap:10px}
+.month::after{content:"";flex:1;height:1px;background:var(--line)}
+.list{display:flex;flex-direction:column;gap:12px}
+
+/* ticket card */
+.ticket{--c:#999;display:grid;grid-template-columns:minmax(0,1fr) 84px;position:relative;text-align:left;width:100%;
+  background:color-mix(in srgb,var(--c) 13%,var(--card));border:1px solid color-mix(in srgb,var(--c) 32%,var(--line));border-radius:14px;padding:0;cursor:pointer}
+.ticket::before,.ticket::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:var(--bg);left:calc(100% - 84px - 6px);
+  border:1px solid color-mix(in srgb,var(--c) 32%,var(--line))}
+.ticket::before{top:-8px;clip-path:inset(50% 0 0 0)}
+.ticket::after{bottom:-8px;clip-path:inset(0 0 50% 0)}
+.tk-main{padding:14px 14px 14px 16px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.tk-meta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mute);font-family:var(--f-mono)}
+.cat{font-family:var(--f-body);font-weight:700;color:var(--ink);background:color-mix(in srgb,var(--c) 35%,var(--card));padding:0 8px;border-radius:6px;font-size:11.5px}
+.tk-main h3{margin:4px 0 0;font-size:17px;line-height:1.3;font-weight:700;overflow-wrap:anywhere}
+.place{margin:0;font-size:13px;color:var(--mute);overflow-wrap:anywhere}
+.line{margin:8px 0 0;font-size:14px;overflow-wrap:anywhere}
+.tk-stub{border-left:2px dashed color-mix(in srgb,var(--c) 60%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 6px;font-size:12px;font-weight:700}
+
+.banner{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--mute);margin-bottom:6px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;min-height:40px;font-weight:500}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
+.btn.danger{color:#D6334A;border-color:currentColor}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.block{width:100%;min-height:50px;font-size:16px;border-radius:12px}
+
+.empty{text-align:center;padding:48px 16px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:14px}
+.empty .faces{display:flex;gap:-8px}
+.empty h2{margin:0;color:var(--ink);font-size:18px}
+.empty p{margin:0;max-width:30ch}
+
+/* insight */
+.sec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.sec h2{margin:0 0 12px;font-size:14px;color:var(--mute);font-weight:700;letter-spacing:.02em}
+.big{display:flex;gap:20px;align-items:baseline}
+.big b{font-family:var(--f-display);font-size:44px;line-height:1;font-weight:400}
+.big span{color:var(--mute);font-size:13px}
+.trail-row{display:flex;gap:10px;align-items:center;padding:5px 0}
+.trail-row .m{font-family:var(--f-mono);font-size:12px;color:var(--mute);width:56px;flex:none}
+.dots{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.dot{width:22px;height:22px;border-radius:50%;background:var(--c);border:0;padding:0}
+.stack{display:flex;height:26px;border-radius:8px;overflow:hidden;gap:2px}
+.stack i{display:block;background:var(--c);min-width:4px}
+.legend{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+.legend li{display:flex;align-items:center;gap:8px;font-size:13px;min-width:0}
+.legend em{font-style:normal;font-family:var(--f-mono);color:var(--mute);margin-left:auto;font-size:12px}
+.bar{display:grid;grid-template-columns:48px 1fr 28px;gap:10px;align-items:center;font-size:13px;padding:4px 0}
+.bar .t{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--ink);border-radius:5px}
+.bar .n{font-family:var(--f-mono);color:var(--mute);text-align:right;font-size:12px}
+.capsule .when{font-family:var(--f-mono);font-size:12.5px;color:var(--mute);margin:0 0 10px}
+.capsule .actions{display:flex;gap:8px;margin-top:12px}
+.note{font-size:12.5px;color:var(--mute);text-align:center;padding:4px 8px 16px}
+
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;overscroll-behavior:contain}
+.sheet-in{max-width:480px;margin:0 auto;padding:0 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.sheet-bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:2;display:flex;align-items:center;justify-content:space-between;padding:12px 0;gap:8px}
+.sheet-bar h1{margin:0;font-size:17px}
+.x{background:none;border:0;min-width:44px;min-height:44px;font-size:15px;color:var(--mute)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.field>label,.field>.lab{font-size:13px;font-weight:700;color:var(--mute);display:flex;justify-content:space-between}
+.inp{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:46px;font-size:16px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;min-height:38px}
+.pill[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
+.scan{display:flex;align-items:center;gap:14px;border:2px dashed var(--line);border-radius:14px;padding:14px;background:var(--card);cursor:pointer;margin-bottom:6px}
+.scan svg{width:34px;height:34px;flex:none}
+.scan b{display:block}
+.scan small{color:var(--mute);font-size:12.5px}
+.scan img{width:64px;height:64px;object-fit:cover;border-radius:8px;flex:none}
+.scanmsg{font-size:12.5px;color:var(--mute);margin:0 0 16px;min-height:1.4em}
+.emos{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.emo{--c:#999;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:12px;background:var(--card);border:2px solid transparent;font-size:12.5px;min-height:76px}
+.emo[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,var(--card));font-weight:700}
+.emo svg{transition:transform .15s}
+.emo[aria-pressed="true"] svg{transform:scale(1.12)}
+.photo{width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-bottom:12px;display:block}
+.detail-actions{display:flex;gap:8px;margin-top:16px}
+.detail-actions .btn{flex:1}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--accent);color:var(--on-accent);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px);text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="logo" aria-label="컬러로그"><span style="color:#FF5C8A">컬</span><span style="color:#FFB020">러</span><span style="color:#4C9BFF">로</span><span style="color:#34C3A0">그</span></div>
+    <div class="sub" id="sub"></div>
+  </header>
+  <main id="view"></main>
+  <nav class="tabs" aria-label="메뉴">
+    <button class="tab" data-act="tab" data-tab="home" id="tab-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M15 5v14" stroke-dasharray="2 3"/></svg>카드</button>
+    <button class="rec" data-act="new" aria-label="새 기록 남기기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button class="tab" data-act="tab" data-tab="insight" id="tab-insight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="12" r="2.4"/><circle cx="12" cy="7" r="2.4"/><circle cx="18" cy="14" r="2.4"/><path d="M8 11l2.2-2.4M14 8l2.6 4"/></svg>돌아보기</button>
+  </nav>
+  <div class="sheet" id="sheet" hidden></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- 데이터 ---------- */
+var EMO=[
+  {id:'thrill',name:'설렘',c:'#FF5C8A'},
+  {id:'happy',name:'행복',c:'#FFB020'},
+  {id:'awe',name:'벅참',c:'#8B6BFF'},
+  {id:'calm',name:'평온',c:'#34C3A0'},
+  {id:'touched',name:'뭉클',c:'#4C9BFF'},
+  {id:'sad',name:'슬픔',c:'#6F7FA6'},
+  {id:'excited',name:'짜릿',c:'#FF7A2F'},
+  {id:'wistful',name:'아쉬움',c:'#B58FD1'}
+];
+var CATS=['영화','공연','전시','콘서트','기타'];
+var KEY='colorlog.v1';
+var DOW=['일','월','화','수','목','금','토'];
+var state={tab:'home',filter:'all',records:[],memId:null,toastT:0};
+
+function emo(id){for(var i=0;i<EMO.length;i++)if(EMO[i].id===id)return EMO[i];return EMO[0];}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function pad(n){return (n<10?'0':'')+n;}
+function localDate(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function today(){return localDate(new Date());}
+function parseISO(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+function fmtDate(s){var d=parseISO(s);return d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate())+' ('+DOW[d.getDay()]+')';}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function seed(){
+  return [
+    {id:'s1',sample:true,title:'여름의 끝',cat:'영화',date:'2026-08-15',place:'한강시네마',emotion:'touched',line:'엔딩 크레딧이 끝날 때까지 아무도 일어나지 않았다',img:''},
+    {id:'s2',sample:true,title:'빛의 정원 展',cat:'전시',date:'2026-09-06',place:'시립미술관 2관',emotion:'calm',line:'조용히 오래 서 있었던 파란 방',img:''},
+    {id:'s3',sample:true,title:'라이브 데이',cat:'콘서트',date:'2026-09-27',place:'올림픽홀',emotion:'excited',line:'목이 쉰 채로 집에 오는 길이 제일 좋았다',img:''}
+  ];
+}
+function load(){
+  try{var raw=localStorage.getItem(KEY);if(raw){var v=JSON.parse(raw);if(Array.isArray(v)){state.records=v;return;}}}catch(e){}
+  state.records=seed();
+}
+function persist(){
+  try{localStorage.setItem(KEY,JSON.stringify(state.records));return true;}catch(e){return false;}
+}
+function sorted(){return state.records.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:(a.id<b.id?1:-1);});}
+
+/* ---------- 스티커 얼굴 ---------- */
+function face(id,size){
+  var e=emo(id),k='#1B1D2A',s='stroke="'+k+'" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"',f='fill="'+k+'"',g='';
+  switch(id){
+    case 'thrill':g='<path d="M13 22q4-6 8 0M27 22q4-6 8 0" '+s+'/><path d="M18 29q6 7 12 0z" '+f+'/><circle cx="12" cy="29" r="3" fill="#fff" opacity=".45"/><circle cx="36" cy="29" r="3" fill="#fff" opacity=".45"/>';break;
+    case 'happy':g='<circle cx="17" cy="21" r="2.6" '+f+'/><circle cx="31" cy="21" r="2.6" '+f+'/><path d="M13 28q11 13 22 0z" '+f+'/>';break;
+    case 'awe':g='<circle cx="17" cy="21" r="3.6" '+f+'/><circle cx="31" cy="21" r="3.6" '+f+'/><circle cx="18.2" cy="19.8" r="1.1" fill="#fff"/><circle cx="32.2" cy="19.8" r="1.1" fill="#fff"/><ellipse cx="24" cy="33" rx="3.4" ry="4.4" '+f+'/>';break;
+    case 'calm':g='<path d="M13 22q4 4 8 0M27 22q4 4 8 0" '+s+'/><path d="M18 31q6 4 12 0" '+s+'/>';break;
+    case 'touched':g='<circle cx="17" cy="21" r="2.6" '+f+'/><circle cx="31" cy="21" r="2.6" '+f+'/><path d="M17 33q3-3 5 0t5 0t3 0" '+s+'/><path d="M35 26q3 4 0 6q-3-2 0-6z" fill="#fff"/>';break;
+    case 'sad':g='<circle cx="17" cy="22" r="2.6" '+f+'/><circle cx="31" cy="22" r="2.6" '+f+'/><path d="M17 35q7-7 14 0" '+s+'/><path d="M16 27q3 4 0 6q-3-2 0-6z" fill="#fff"/>';break;
+    case 'excited':g='<path d="M13 17l9 5-9 5M35 17l-9 5 9 5" '+s+'/><path d="M15 31h18q0 9-9 9t-9-9z" '+f+'/>';break;
+    default:g='<circle cx="17" cy="22" r="2.6" '+f+'/><circle cx="31" cy="22" r="2.6" '+f+'/><path d="M17 34q6-3 14-1" '+s+'/>';
+  }
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23" fill="'+e.c+'"/>'+g+'</svg>';
+}
+
+/* ---------- 카드 ---------- */
+function cardHTML(r,tag){
+  var e=emo(r.emotion);
+  var inner='<div class="tk-main"><div class="tk-meta"><span class="cat">'+esc(r.cat)+'</span><time>'+fmtDate(r.date)+'</time></div>'+
+    '<h3>'+esc(r.title||'제목을 입력하세요')+'</h3>'+(r.place?'<p class="place">'+esc(r.place)+'</p>':'')+
+    (r.line?'<p class="line">“'+esc(r.line)+'”</p>':'')+'</div>'+
+    '<div class="tk-stub">'+face(r.emotion,46)+'<span>'+e.name+'</span></div>';
+  if(tag==='static')return '<div class="ticket" style="--c:'+e.c+'">'+inner+'</div>';
+  return '<button class="ticket" style="--c:'+e.c+'" data-act="open" data-id="'+esc(r.id)+'">'+inner+'</button>';
+}
+
+/* ---------- 화면: 홈 ---------- */
+function renderHome(){
+  var all=sorted(),h='';
+  if(!all.length){
+    return '<div class="empty"><div>'+EMO.slice(0,4).map(function(e){return face(e.id,44);}).join('')+'</div><h2>첫 카드를 남겨 보세요</h2><p>티켓 사진 한 장, 감정 스티커 하나, 한 줄이면 끝나요. 기록은 이 기기에만 저장돼요.</p><button class="btn primary" data-act="new">기록 남기기</button></div>';
+  }
+  h+='<div class="chips" role="group" aria-label="감정 필터"><button class="chip all" data-act="filter" data-f="all" aria-pressed="'+(state.filter==='all')+'">전체</button>';
+  EMO.forEach(function(e){
+    var n=all.filter(function(r){return r.emotion===e.id;}).length;
+    if(!n&&state.filter!==e.id)return;
+    h+='<button class="chip" data-act="filter" data-f="'+e.id+'" aria-pressed="'+(state.filter===e.id)+'">'+face(e.id,24)+e.name+' '+n+'</button>';
+  });
+  h+='</div>';
+  if(all.some(function(r){return r.sample;})){
+    h+='<div class="banner"><span>예시 기록이 섞여 있어요.</span><button class="btn" data-act="clearsample">예시 지우기</button></div>';
+  }
+  var list=state.filter==='all'?all:all.filter(function(r){return r.emotion===state.filter;});
+  var cur='';
+  list.forEach(function(r){
+    var m=r.date.slice(0,7);
+    if(m!==cur){if(cur)h+='</div>';cur=m;h+='<div class="month">'+m.replace('-','.')+'</div><div class="list">';}
+    h+=cardHTML(r);
+  });
+  if(cur)h+='</div>';
+  return h;
+}
+
+/* ---------- 화면: 돌아보기 ---------- */
+function rel(dateStr){
+  var days=Math.round((parseISO(today())-parseISO(dateStr))/86400000);
+  if(days<=0)return '오늘';
+  if(days<31)return days+'일 전';
+  var mo=Math.floor(days/30.44);
+  if(mo<12)return mo+'개월 전';
+  var y=Math.floor(mo/12),r=mo%12;
+  return y+'년'+(r?' '+r+'개월':'')+' 전';
+}
+function pickMemory(avoid){
+  var all=state.records;if(!all.length)return null;
+  var t=new Date(),md=pad(t.getMonth()+1)+'-'+pad(t.getDate());
+  var same=all.filter(function(r){return r.date.slice(5)===md&&r.date.slice(0,4)!==String(t.getFullYear())&&r.id!==avoid;});
+  if(same.length)return {r:same[Math.floor(Math.random()*same.length)],same:true};
+  var pool=all.filter(function(r){return r.id!==avoid;});
+  if(!pool.length)pool=all;
+  return {r:pool[Math.floor(Math.random()*pool.length)],same:false};
+}
+function renderInsight(){
+  var all=sorted();
+  if(!all.length)return '<div class="empty"><h2>아직 돌아볼 기록이 없어요</h2><p>카드가 쌓이면 감정의 색이 한눈에 보여요.</p><button class="btn primary" data-act="new">기록 남기기</button></div>';
+  var h='',total=all.length,mk=today().slice(0,7),thisM=all.filter(function(r){return r.date.slice(0,7)===mk;}).length;
+  h+='<section class="sec"><h2>지금까지</h2><div class="big"><div><b>'+total+'</b> <span>개의 카드</span></div><div><b>'+thisM+'</b> <span>이번 달</span></div></div></section>';
+
+  // 컬러 궤적
+  var months={},order=[];
+  all.slice().reverse().forEach(function(r){var m=r.date.slice(0,7);if(!months[m]){months[m]=[];order.push(m);}months[m].push(r);});
+  h+='<section class="sec"><h2>감정의 궤적</h2>';
+  order.slice(-12).forEach(function(m){
+    h+='<div class="trail-row"><span class="m">'+m.replace('-','.')+'</span><div class="dots">'+months[m].map(function(r){
+      return '<button class="dot" style="--c:'+emo(r.emotion).c+'" data-act="open" data-id="'+esc(r.id)+'" aria-label="'+esc(r.title)+', '+emo(r.emotion).name+'"></button>';}).join('')+'</div></div>';
+  });
+  h+='</section>';
+
+  // 감정 분포
+  var cnt={};EMO.forEach(function(e){cnt[e.id]=0;});all.forEach(function(r){cnt[r.emotion]=(cnt[r.emotion]||0)+1;});
+  var used=EMO.filter(function(e){return cnt[e.id]>0;}).sort(function(a,b){return cnt[b.id]-cnt[a.id];});
+  h+='<section class="sec"><h2>가장 자주 느낀 감정</h2><div class="stack" role="img" aria-label="감정 비율">'+used.map(function(e){return '<i style="--c:'+e.c+';flex:'+cnt[e.id]+'"></i>';}).join('')+'</div><ul class="legend">'+
+    used.map(function(e){return '<li>'+face(e.id,24)+e.name+'<em>'+cnt[e.id]+' · '+Math.round(cnt[e.id]/total*100)+'%</em></li>';}).join('')+'</ul></section>';
+
+  // 분류
+  var cc={};all.forEach(function(r){cc[r.cat]=(cc[r.cat]||0)+1;});
+  var mx=Math.max.apply(null,CATS.map(function(c){return cc[c]||0;}));
+  h+='<section class="sec"><h2>어떤 문화를 즐겼나</h2>'+CATS.filter(function(c){return cc[c];}).map(function(c){
+    return '<div class="bar"><span>'+c+'</span><div class="t"><i style="width:'+Math.round(cc[c]/mx*100)+'%"></i></div><span class="n">'+cc[c]+'</span></div>';}).join('')+'</section>';
+
+  // 타임캡슐
+  var mem=state.memId?state.records.filter(function(r){return r.id===state.memId;})[0]:null,same=false;
+  if(!mem){var p=pickMemory();mem=p.r;same=p.same;state.memId=mem.id;}
+  h+='<section class="sec capsule"><h2>타임캡슐</h2><p class="when">'+rel(mem.date)+'의 기록'+(same?' · 오늘과 같은 날':'')+'</p>'+cardHTML(mem)+
+    '<div class="actions"><button class="btn block" data-act="again">다른 기록 꺼내기</button></div></section>';
+  h+='<p class="note">좋아요도 댓글도 없어요. 이 카드들은 나만 봅니다.</p>';
+  return h;
+}
+
+/* ---------- 렌더 ---------- */
+function render(){
+  var v=document.getElementById('view');
+  v.innerHTML=state.tab==='home'?renderHome():renderInsight();
+  document.getElementById('tab-home').setAttribute('aria-current',state.tab==='home'?'page':'false');
+  document.getElementById('tab-insight').setAttribute('aria-current',state.tab==='insight'?'page':'false');
+  document.getElementById('sub').textContent=state.records.length?state.records.length+'개의 카드':'나만의 타임캡슐';
+}
+function toast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.hidden=false;clearTimeout(state.toastT);
+  state.toastT=setTimeout(function(){t.hidden=true;},2600);
+}
+
+/* ---------- 시트 ---------- */
+var sheet=document.getElementById('sheet');
+function openSheet(html){sheet.innerHTML='<div class="sheet-in">'+html+'</div>';sheet.hidden=false;sheet.scrollTop=0;}
+function closeSheet(){sheet.hidden=true;sheet.innerHTML='';draft=null;}
+
+/* ---------- 상세 ---------- */
+function openDetail(id,confirmDel){
+  var r=state.records.filter(function(x){return x.id===id;})[0];if(!r)return;
+  var h='<div class="sheet-bar"><h1>카드</h1><button class="x" data-act="close">닫기</button></div>';
+  if(r.img)h+='<img class="photo" src="'+r.img+'" alt="저장한 티켓 사진">';
+  h+=cardHTML(r,'static');
+  h+='<p class="note" style="text-align:left;padding-inline:0">'+rel(r.date)+'에 남긴 날짜 기준이에요.</p>';
+  h+='<div class="detail-actions">';
+  h+=confirmDel?'<button class="btn danger" data-act="delyes" data-id="'+esc(r.id)+'">정말 삭제</button><button class="btn" data-act="open" data-id="'+esc(r.id)+'">취소</button>':
+    '<button class="btn" data-act="edit" data-id="'+esc(r.id)+'">수정</button><button class="btn danger" data-act="del" data-id="'+esc(r.id)+'">삭제</button>';
+  h+='</div>';
+  openSheet(h);
+}
+
+/* ---------- 기록 폼 ---------- */
+var draft=null;
+function openForm(r){
+  draft=r?JSON.parse(JSON.stringify(r)):{id:'',title:'',cat:'영화',date:today(),place:'',emotion:'',line:'',img:''};
+  var editing=!!r;
+  var h='<div class="sheet-bar"><button class="x" data-act="close">취소</button><h1>'+(editing?'카드 수정':'새 카드')+'</h1><span style="min-width:44px"></span></div>';
+  h+='<label class="scan" for="f-photo"><span id="scan-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 12h8"/></svg></span><span><b>티켓 스캔</b><small>사진을 고르면 날짜와 장소를 채워 줘요</small></span></label>'+
+    '<input type="file" id="f-photo" accept="image/*" hidden><p class="scanmsg" id="scanmsg" aria-live="polite"></p>';
+  h+='<div id="preview" style="margin-bottom:20px"></div>';
+  h+='<div class="field"><label for="f-title">제목</label><input class="inp" id="f-title" maxlength="60" autocomplete="off" placeholder="예) 여름의 끝"></div>';
+  h+='<div class="field"><span class="lab">분류</span><div class="pills" id="f-cats">'+CATS.map(function(c){return '<button type="button" class="pill" data-act="cat" data-v="'+c+'" aria-pressed="false">'+c+'</button>';}).join('')+'</div></div>';
+  h+='<div class="row2"><div class="field"><label for="f-date">날짜</label><input class="inp" type="date" id="f-date" max="'+today()+'"></div><div class="field"><label for="f-place">장소</label><input class="inp" id="f-place" maxlength="40" autocomplete="off" placeholder="극장, 전시관"></div></div>';
+  h+='<div class="field"><span class="lab">그날의 감정 스티커</span><div class="emos" id="f-emos">'+EMO.map(function(e){return '<button type="button" class="emo" style="--c:'+e.c+'" data-act="emo" data-v="'+e.id+'" aria-pressed="false">'+face(e.id,40)+e.name+'</button>';}).join('')+'</div></div>';
+  h+='<div class="field"><label for="f-line"><span>한 줄 평</span><span id="f-count" style="font-family:var(--f-mono)">0/40</span></label><input class="inp" id="f-line" maxlength="40" autocomplete="off" placeholder="그날을 한 줄로"></div>';
+  h+='<button class="btn primary block" id="f-save" data-act="save" data-edit="'+(editing?'1':'')+'" disabled>'+(editing?'수정 저장':'카드 저장')+'</button>';
+  openSheet(h);
+  q('f-title').value=draft.title;q('f-date').value=draft.date;q('f-place').value=draft.place;q('f-line').value=draft.line;
+  syncForm();
+}
+function q(id){return document.getElementById(id);}
+function syncForm(){
+  if(!draft)return;
+  Array.prototype.forEach.call(document.querySelectorAll('#f-cats .pill'),function(b){b.setAttribute('aria-pressed',String(b.dataset.v===draft.cat));});
+  Array.prototype.forEach.call(document.querySelectorAll('#f-emos .emo'),function(b){b.setAttribute('aria-pressed',String(b.dataset.v===draft.emotion));});
+  q('f-count').textContent=draft.line.length+'/40';
+  q('f-save').disabled=!(draft.title.trim()&&draft.emotion&&draft.date);
+  var pv=q('preview');
+  if(draft.emotion){pv.innerHTML=(draft.img?'<img class="photo" src="'+draft.img+'" alt="티켓 사진">':'')+cardHTML(draft,'static');}
+  else pv.innerHTML=draft.img?'<img class="photo" src="'+draft.img+'" alt="티켓 사진">':'';
+  var ico=q('scan-ico');
+  if(ico&&draft.img){ico.innerHTML='<img src="'+draft.img+'" alt="">';}
+}
+
+/* ---------- 티켓 스캔 ---------- */
+function resizeImage(file){
+  return new Promise(function(res,rej){
+    var url=URL.createObjectURL(file),im=new Image();
+    im.onload=function(){
+      var m=720,s=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');
+      c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(url);
+      res({canvas:c,data:c.toDataURL('image/jpeg',0.72)});
+    };
+    im.onerror=function(){URL.revokeObjectURL(url);rej(new Error('img'));};
+    im.src=url;
+  });
+}
+function readText(canvas){
+  if(!('TextDetector' in window))return Promise.resolve('');
+  try{return new window.TextDetector().detect(canvas).then(function(a){return a.map(function(x){return x.rawValue;}).join('\n');}).catch(function(){return '';});}
+  catch(e){return Promise.resolve('');}
+}
+function parseTicket(t){
+  var out={},m=t.match(/(20\d{2})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/);
+  if(m){var iso=m[1]+'-'+pad(+m[2])+'-'+pad(+m[3]);if(iso<=today()&&!isNaN(parseISO(iso)))out.date=iso;}
+  var lines=t.split(/\n+/).map(function(s){return s.trim();}).filter(Boolean);
+  var pl=lines.filter(function(s){return /(극장|시네마|CGV|메가박스|롯데시네마|미술관|박물관|갤러리|아트홀|아트센터|콘서트홀|오페라|체육관|공연장|홀|센터|관)\b|(홀|센터|극장)$/.test(s)&&s.length<=30;})[0];
+  if(pl)out.place=pl;
+  var ti=lines.filter(function(s){return s.length>=2&&s.length<=40&&!/\d{4}\s*[.\-\/]/.test(s)&&s!==pl;})[0];
+  if(ti)out.title=ti;
+  return out;
+}
+function onPhoto(file){
+  if(!file||!draft)return;
+  var msg=q('scanmsg');msg.textContent='사진을 읽는 중이에요...';
+  resizeImage(file).then(function(r){
+    draft.img=r.data;
+    return readText(r.canvas).then(function(text){
+      var p=parseTicket(text),got=[];
+      if(p.date){draft.date=p.date;got.push('날짜');}
+      if(p.place){draft.place=p.place;got.push('장소');}
+      if(p.title&&!draft.title.trim()){draft.title=p.title;got.push('제목');}
+      if(!p.date&&file.lastModified){var d=localDate(new Date(file.lastModified));if(d<=today()){draft.date=d;got.push('촬영일을 날짜로');}}
+      q('f-title').value=draft.title;q('f-date').value=draft.date;q('f-place').value=draft.place;
+      msg.textContent=text?(got.length?got.join(', ')+' 채웠어요. 맞는지 확인해 주세요.':'글자를 찾지 못했어요. 직접 입력해 주세요.'):
+        (got.length?'이 기기에서는 글자 인식을 쓸 수 없어 '+got.join(', ')+' 채웠어요. 제목과 장소는 직접 입력해 주세요.':'이 기기에서는 글자 인식을 쓸 수 없어요. 직접 입력해 주세요.');
+      syncForm();
+    });
+  }).catch(function(){msg.textContent='사진을 불러오지 못했어요. 다른 사진으로 다시 시도해 주세요.';});
+}
+function saveDraft(isEdit){
+  if(!draft)return;
+  var rec={id:draft.id||uid(),title:draft.title.trim(),cat:draft.cat,date:draft.date,place:draft.place.trim(),emotion:draft.emotion,line:draft.line.trim(),img:draft.img||'',sample:false};
+  var before=state.records.slice();
+  if(isEdit)state.records=state.records.map(function(r){return r.id===rec.id?rec:r;});else state.records.push(rec);
+  if(!persist()){
+    state.records=before;
+    if(rec.img){rec.img='';if(isEdit)state.records=state.records.map(function(r){return r.id===rec.id?rec:r;});else state.records.push(rec);
+      if(persist()){toast('저장 공간이 부족해 사진 없이 저장했어요');finishSave();return;}
+      state.records=before;}
+    toast('저장하지 못했어요. 오래된 기록을 지운 뒤 다시 시도해 주세요');return;
+  }
+  toast(isEdit?'수정했어요':'카드를 남겼어요');finishSave();
+}
+function finishSave(){closeSheet();state.tab='home';state.filter='all';state.memId=null;render();document.getElementById('view').scrollTop=0;}
+
+/* ---------- 이벤트 ---------- */
+document.getElementById('app').addEventListener('click',function(ev){
+  var el=ev.target.closest('[data-act]');if(!el)return;
+  var a=el.dataset.act,id=el.dataset.id;
+  switch(a){
+    case 'tab':state.tab=el.dataset.tab;render();document.getElementById('view').scrollTop=0;break;
+    case 'new':openForm(null);break;
+    case 'filter':state.filter=el.dataset.f;render();break;
+    case 'open':openDetail(id,false);break;
+    case 'close':closeSheet();break;
+    case 'edit':openForm(state.records.filter(function(r){return r.id===id;})[0]);break;
+    case 'del':openDetail(id,true);break;
+    case 'delyes':
+      state.records=state.records.filter(function(r){return r.id!==id;});persist();state.memId=null;closeSheet();render();toast('카드를 삭제했어요');break;
+    case 'clearsample':
+      state.records=state.records.filter(function(r){return !r.sample;});persist();state.memId=null;state.filter='all';render();toast('예시 기록을 지웠어요');break;
+    case 'again':{var p=pickMemory(state.memId);if(p){state.memId=p.r.id;render();}break;}
+    case 'cat':if(draft){draft.cat=el.dataset.v;syncForm();}break;
+    case 'emo':if(draft){draft.emotion=el.dataset.v;syncForm();}break;
+    case 'save':saveDraft(!!el.dataset.edit);break;
+  }
+});
+document.getElementById('app').addEventListener('input',function(ev){
+  if(!draft)return;var t=ev.target.id;
+  if(t==='f-title')draft.title=ev.target.value;
+  else if(t==='f-place')draft.place=ev.target.value;
+  else if(t==='f-date')draft.date=ev.target.value;
+  else if(t==='f-line')draft.line=ev.target.value;
+  else return;
+  syncForm();
+});
+document.getElementById('app').addEventListener('change',function(ev){
+  if(ev.target.id==='f-photo'){onPhoto(ev.target.files&&ev.target.files[0]);ev.target.value='';}
+});
+document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!sheet.hidden)closeSheet();});
+
+load();render();
+})();
+</script>
+
+</body></html>
